@@ -9,7 +9,7 @@ Write all code comments and documentation in English.
 - Client only: secrets never leave the device through `cvlt`.
 - No own cryptography.
 - No backup or recovery path (no-recovery principle).
-- This crate is LGPL-3.0-only WITH LGPL-3.0-linking-exception. Do not add implementation code available only under the full GPL or AGPL.
+- This crate is FSL-1.1-ALv2 (it decides: vault facade). Executing drawers (cwlt, ckmg, cdht, cwst) are separate LGPL crates.
 
 ## Quality boundary
 
