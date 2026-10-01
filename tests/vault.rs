@@ -279,33 +279,90 @@ struct UncertainBackend {
     fail: std::rc::Rc<std::cell::Cell<bool>>,
 }
 impl cwst::backend::Backend for UncertainBackend {
-    async fn read(&self) -> Result<Option<Vec<u8>>,cwst::Error> {
+    async fn read(&self) -> Result<Option<Vec<u8>>, cwst::Error> {
         self.database.read().await
     }
-    async fn compare_exchange(&self,expected:Option<&[u8]>,next:&[u8])->Result<(),cwst::Error> {
-        self.database.compare_exchange(expected,next).await?;
-        if self.fail.get() { Err(cwst::Error::Uncertain) } else { Ok(()) }
+    async fn compare_exchange(
+        &self,
+        expected: Option<&[u8]>,
+        next: &[u8],
+    ) -> Result<(), cwst::Error> {
+        self.database.compare_exchange(expected, next).await?;
+        if self.fail.get() {
+            Err(cwst::Error::Uncertain)
+        } else {
+            Ok(())
+        }
     }
 }
 shared!(unknown_outcome_is_reconciled_and_locked_reads_refuse, {
-    let prf=PrfOutput::from_bytes(&[4;32]).unwrap();let cipher=store_cipher(&prf,"garden").unwrap();
-    let locator=vault_location(&prf,"garden").unwrap();
-    let fail=std::rc::Rc::new(std::cell::Cell::new(false));
-    let backend=UncertainBackend {database:cwst::backend::Memory::new(),fail:fail.clone()};
-    let store=cwst::Store::create(backend.clone(),&cipher,"garden").await.unwrap();
-    assert!(matches!(cvlt::Vault::new(store,"wrong",Clock,ckmg::SystemEntropy,UnavailableAuthority,UnavailableRecords,WalletNotIntegrated),Err(Error::Scope)));
-    let store=cwst::Store::open(backend.clone(),&cipher,"garden").await.unwrap();
-    let storage=shared_store(store);let mut keys=KeyStore::new(storage.clone(),"garden").unwrap();
-    let replacement=cipher.seal(&mut ckmg::SystemEntropy,b"owner",b"opaque keys checkpoint").unwrap();
-    let mut together=batch(0,1);together.outputs.push(cwst::Output{id:[1;32],bytes:replacement.clone()});
-    let armed=keys.stage(together).unwrap();fail.set(true);
-    assert_eq!(keys.compare_exchange(&locator,None,&replacement).await.unwrap(),Commit::Unknown);drop(armed);
-    assert_eq!(keys.load(&locator).await.unwrap_err(),ckmg::Error::Unavailable);
-    let armed=keys.stage(batch(0,2)).unwrap();
-    assert_eq!(keys.compare_exchange(&locator,None,&replacement).await.unwrap_err(),ckmg::Error::Unavailable);drop(armed);
+    let prf = PrfOutput::from_bytes(&[4; 32]).unwrap();
+    let cipher = store_cipher(&prf, "garden").unwrap();
+    let locator = vault_location(&prf, "garden").unwrap();
+    let fail = std::rc::Rc::new(std::cell::Cell::new(false));
+    let backend = UncertainBackend {
+        database: cwst::backend::Memory::new(),
+        fail: fail.clone(),
+    };
+    let store = cwst::Store::create(backend.clone(), &cipher, "garden")
+        .await
+        .unwrap();
+    assert!(matches!(
+        cvlt::Vault::new(
+            store,
+            "wrong",
+            Clock,
+            ckmg::SystemEntropy,
+            UnavailableAuthority,
+            UnavailableRecords,
+            WalletNotIntegrated
+        ),
+        Err(Error::Scope)
+    ));
+    let store = cwst::Store::open(backend.clone(), &cipher, "garden")
+        .await
+        .unwrap();
+    let storage = shared_store(store);
+    let mut keys = KeyStore::new(storage.clone(), "garden").unwrap();
+    let replacement = cipher
+        .seal(
+            &mut ckmg::SystemEntropy,
+            b"owner",
+            b"opaque keys checkpoint",
+        )
+        .unwrap();
+    let mut together = batch(0, 1);
+    together.outputs.push(cwst::Output {
+        id: [1; 32],
+        bytes: replacement.clone(),
+    });
+    let armed = keys.stage(together).unwrap();
+    fail.set(true);
+    assert_eq!(
+        keys.compare_exchange(&locator, None, &replacement)
+            .await
+            .unwrap(),
+        Commit::Unknown
+    );
+    drop(armed);
+    assert_eq!(
+        keys.load(&locator).await.unwrap_err(),
+        ckmg::Error::Unavailable
+    );
+    let armed = keys.stage(batch(0, 2)).unwrap();
+    assert_eq!(
+        keys.compare_exchange(&locator, None, &replacement)
+            .await
+            .unwrap_err(),
+        ckmg::Error::Unavailable
+    );
+    drop(armed);
     fail.set(false);
-    let reopened=cwst::Store::open(backend,&cipher,"garden").await.unwrap();
-    assert_eq!(reopened.operation().unwrap(),[1;32]);
-    assert_eq!(reopened.read("keys",locator.as_bytes()).unwrap().unwrap(),replacement);
-    assert_eq!(reopened.load_pending().unwrap()[0].bytes,replacement);
+    let reopened = cwst::Store::open(backend, &cipher, "garden").await.unwrap();
+    assert_eq!(reopened.operation().unwrap(), [1; 32]);
+    assert_eq!(
+        reopened.read("keys", locator.as_bytes()).unwrap().unwrap(),
+        replacement
+    );
+    assert_eq!(reopened.load_pending().unwrap()[0].bytes, replacement);
 });
