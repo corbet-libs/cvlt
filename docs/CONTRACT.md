@@ -26,7 +26,7 @@ Records is an independent trusted port while cdht's owner completes its actual
 protocol adapter. Present means an authenticated encrypted record; KnownAbsent
 requires that owner's protocol evidence. Timeouts and unverifiable or incomplete
 knowledge are Unavailable. Vault never infers absence, calls create on restore,
-or treats either status as loss of deterministic identity/membership. This port
+or interprets a lookup result as permission to mint a replacement identity. This port
 performs lookup only; installing record data needs the owner's authenticated
 merge/lineage evidence and the shared checkpoint transaction. Whole active-member
 data restore remains unaccepted until real cdht and holder adapters run together.
