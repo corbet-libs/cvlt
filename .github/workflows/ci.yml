@@ -38,19 +38,24 @@ jobs:
           name: dependency-lock
           path: Cargo.lock
       - name: Format
+        id: format
+        continue-on-error: true
         run: cargo fmt --all -- --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
       - name: Export formatting for review
-        if: failure()
+        if: always() && steps.format.outcome == 'failure'
         run: |
           cargo fmt --all
           git diff > formatting.patch
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: always() && steps.format.outcome == 'failure'
         with:
           name: formatting
           path: formatting.patch
-      - run: cargo clippy --locked --all-targets -- -D warnings
-      - run: cargo test --locked
+      - name: Enforce formatting
+        if: always() && steps.format.outcome == 'failure'
+        run: exit 1
   wasm:
     needs: native
     runs-on: ubuntu-24.04
