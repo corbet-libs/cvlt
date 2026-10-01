@@ -137,10 +137,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: dependency-lock
-      # Matches upstream wasm-bindgen's coverage runtime workaround. Product builds remain stable.
+      # Experimental upstream coverage runs on current nightly; product builds remain stable.
       - uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-02-18
           targets: wasm32-unknown-unknown
           components: llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
