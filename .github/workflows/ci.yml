@@ -123,8 +123,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
-      CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
-      CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS: -Cinstrument-coverage -Zno-profiler-runtime -Clink-args=--no-gc-sections --cfg=wasm_bindgen_unstable_test_coverage
+      CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: python3 .github/scripts/browser-coverage-runner.py
+      CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS: -Zno-profiler-runtime -Clink-args=--no-gc-sections --cfg=owned_browser_coverage
       WASM_BINDGEN_TEST_ONLY_WEB: "1"
       WASM_BINDGEN_SPLIT_LINKED_MODULES: "1"
       CHROMEDRIVER: /usr/bin/chromedriver
@@ -157,6 +157,13 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-llvm-cov,wasm-bindgen-cli@${{ steps.binding-version.outputs.version }}
+      - name: Report instrumentation versions
+        run: |
+          rustc --version --verbose
+          cargo llvm-cov --version
+          clang --version
+      - name: Install maintained browser driver
+        run: python3 -m pip install -r .github/requirements.txt
       - name: Measure actual browser Rust lines and branches
         run: cargo llvm-cov test --locked --branch --coverage-target-only --target wasm32-unknown-unknown --lcov --output-path wasm-coverage.lcov --ignore-filename-regex '/tests/'
       - name: Enforce actual browser Rust coverage
