@@ -13,7 +13,8 @@ the snapshot and Dependabot proposes manifest/lock updates. A failed coverage ga
 is an open requirement, never evidence of complete coverage.
 
 Actual browser Rust coverage runs the same owner vectors through wasm-bindgen
-minicov, using the upstream nightly-2026-02-18 coverage-runtime workaround.
+minicov on current nightly. Upstream instrumentation failures remain red and
+are reported separately from stable browser execution.
 Stable Rust separately builds and executes the product vectors. Native and wasm
 line/branch gates are independent; neither substitutes for the other. LCOV
 merges generic instantiations at the source-line boundary and preserves every
