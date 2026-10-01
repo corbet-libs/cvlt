@@ -35,12 +35,15 @@ Wallet remains a borrowed owner capability supplied by accounting. There is no
 substitute proof success path. Keys derives the global passport holder seed; Wallet holds the passport and
 operates Pseudonyms' holder side. These owner integrations are pending.
 
-The root derives from the first root passkey. Pairing transfers it and retains an
-authenticated copy wrapped under each new device's own passkey PRF in member
-records. Any registered passkey restores while those records remain; after
-record loss only the root passkey restores identity. Keys owns the lineage and
-wrapping operations; Vault wires their durable checkpoint with Records. Paired-root
-retention is required integration work, not an open retention policy. No local
+Every enrolled passkey is equal. Keys must retain a random common identity root
+as separate authenticated wrapped copies under each passkey in member DHT records.
+Devices refresh those records during use; the operator keeps no copy. Loss of all
+local and DHT copies after long absence can lose identity and data equally for
+every passkey. No first passkey retains privileged recordless recovery. This rule
+does not define a new wrapping format, discovery scheme or retention guarantee;
+those owner ports must be implemented and reviewed before restore is accepted.
+The current deterministic Keys implementation is not evidence of that contract.
+Vault only composes its eventual owner checkpoints and outputs atomically. No local
 HTTP/WebAuthn/network code, raw root export, operator backup or duplicated domain
 state is introduced. `lock` wipes Keys and shared decrypted Storage immediately;
 existing shared container references then receive Locked from Storage.
