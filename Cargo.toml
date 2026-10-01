@@ -24,7 +24,7 @@ zeroize = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
 futures-executor = "0.3"
-wasm-bindgen-test = "0.3"
+wasm-bindgen-test = "0.3.79"
 
 [lints.rust]
 unsafe_code = "forbid"
