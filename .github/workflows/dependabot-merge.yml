@@ -1,0 +1,45 @@
+name: Dependabot merge
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  statuses: read
+  actions: read
+concurrency:
+  group: dependency-merge
+  cancel-in-progress: false
+jobs:
+  merge:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # API-only trusted default-branch code: never check out or execute PR files.
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+            const pulls = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open' });
+            for (const candidate of pulls) {
+              if (candidate.user.login !== 'dependabot[bot]' || candidate.draft || candidate.base.ref !== 'main' ||
+                  candidate.head.repo?.full_name !== `${owner}/${repo}` || candidate.head.sha !== run.head_sha) continue;
+              const sha = candidate.head.sha;
+              const checks = await github.paginate(github.rest.checks.listForRef, { owner, repo, ref: sha, filter: 'latest' });
+              const statuses = await github.rest.repos.getCombinedStatusForRef({ owner, repo, ref: sha });
+              if (!['native', 'wasm', 'coverage'].every(name => checks.some(c => c.name === name && c.app?.slug === 'github-actions' && c.conclusion === 'success'))) continue;
+              if (checks.some(c => c.status !== 'completed' || c.conclusion !== 'success')) continue;
+              if (statuses.data.statuses.length && statuses.data.state !== 'success') continue;
+              const { data: current } = await github.rest.pulls.get({ owner, repo, pull_number: candidate.number });
+              if (current.head.sha !== sha || current.mergeable !== true || current.mergeable_state !== 'clean') continue;
+              // expectedHeadOid fences a synchronize race. GitHub still enforces every protection.
+              await github.graphql(`mutation($id: ID!, $sha: GitObjectID!) {
+                enablePullRequestAutoMerge(input: {pullRequestId: $id, expectedHeadOid: $sha, mergeMethod: SQUASH}) {
+                  pullRequest { number }
+                }
+              }`, { id: current.node_id, sha });
+            }
