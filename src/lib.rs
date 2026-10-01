@@ -2,9 +2,9 @@
 //! It never duplicates their lineage, record, proof or accepted-state logic.
 #![forbid(unsafe_code)]
 mod storage;
-pub use storage::*;
 use ckmg::{Authority, Clock, Entropy, Locator};
 use cwst::backend::Backend;
+pub use storage::*;
 
 /// A restore lookup distinguishes authenticated absence from unavailable data.
 /// Neither outcome means that deterministic identity or membership ceased to exist.
@@ -44,25 +44,51 @@ pub struct Vault<B: Backend, C, E, A, R, W> {
 impl<B: Backend, C: Clock, E: Entropy, A: Authority, R: Records, W> Vault<B, C, E, A, R, W> {
     /// Attach independently constructed owner capabilities to one authenticated
     /// community checkpoint. Construction grants no member or device authority.
-    pub fn new(store: cwst::Store<B>, scope: &str, clock: C, entropy: E, authority: A, records: R, wallet: W) -> Result<Self, Error> {
-        if !store.is_scope(scope) { return Err(Error::Scope); }
+    pub fn new(
+        store: cwst::Store<B>,
+        scope: &str,
+        clock: C,
+        entropy: E,
+        authority: A,
+        records: R,
+        wallet: W,
+    ) -> Result<Self, Error> {
+        if !store.is_scope(scope) {
+            return Err(Error::Scope);
+        }
         let storage = shared_store(store);
         let key_store = KeyStore::new(storage.clone(), scope)?;
         let keys = ckmg::Keys::new(key_store.clone(), clock, entropy, authority);
-        Ok(Self { keys, storage, key_store, records, wallet })
+        Ok(Self {
+            keys,
+            storage,
+            key_store,
+            records,
+            wallet,
+        })
     }
     /// Keys checks live authority for its own operations; roots remain opaque.
-    pub fn keys(&mut self) -> &mut ckmg::Keys<KeyStore<B>, C, E, A> { &mut self.keys }
+    pub fn keys(&mut self) -> &mut ckmg::Keys<KeyStore<B>, C, E, A> {
+        &mut self.keys
+    }
     /// Shared durable checkpoint used to compose owner candidates and outputs.
-    pub fn storage(&self) -> &SharedStore<B> { &self.storage }
+    pub fn storage(&self) -> &SharedStore<B> {
+        &self.storage
+    }
     /// Arm one Keys write with its companion owner changes. Keep the guard alive
     /// through Keys::commit/acknowledge; dropping it cancels unused companions.
-    pub fn stage_keys(&mut self, batch: Batch) -> Result<BatchGuard, Error> { self.key_store.stage(batch) }
+    pub fn stage_keys(&mut self, batch: Batch) -> Result<BatchGuard, Error> {
+        self.key_store.stage(batch)
+    }
     /// Borrow the real accounting owner; Vault does not copy accepted openings.
-    pub fn wallet(&mut self) -> &mut W { &mut self.wallet }
+    pub fn wallet(&mut self) -> &mut W {
+        &mut self.wallet
+    }
     /// Delegate lookup, preserving unavailable versus known-absent evidence. This
     /// never creates/replaces a local checkpoint or changes an identity/membership.
-    pub async fn restore_lookup(&mut self, locator: &Locator) -> RestoreLookup { self.records.lookup(locator).await }
+    pub async fn restore_lookup(&mut self, locator: &Locator) -> RestoreLookup {
+        self.records.lookup(locator).await
+    }
     /// Wipe unlocked keys and checkpoint material. Only encrypted backend data remains.
     pub async fn lock(mut self) {
         self.keys.lock();
@@ -71,5 +97,7 @@ impl<B: Backend, C: Clock, E: Entropy, A: Authority, R: Records, W> Vault<B, C, 
     }
 }
 impl<B: Backend, C, E, A, R, W> std::fmt::Debug for Vault<B, C, E, A, R, W> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { f.write_str("Vault([redacted])") }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Vault([redacted])")
+    }
 }
