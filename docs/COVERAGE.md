@@ -48,3 +48,15 @@ protocol. A separate upstream git source is used solely to separate these Cargo
 package identities. The obsolete runner profiler is disabled; only the maintained
 current runtime is linked into the instrumented test. There is no patched version
 number, compiler pin or product dependency on this helper.
+
+## Report integrity
+
+The gate reuses the shared source-counter checker and requires companion LLVM
+JSON from the same native or browser execution. It checks the complete production
+file inventory, summaries, unique branch locations, record termination and
+nonnegative unique counters before requiring every reachable source line and
+emitted branch. Raw generic-instantiation diagnostics are retained; merged source
+coverage does not claim that every generic instantiation executes. Regression
+cases reject incomplete, duplicated, inconsistent and uncovered reports. Any
+documented line exclusion must still match its exact source, occur in the report
+with zero hits, and contain no branch; stale or exercised exclusions fail.
