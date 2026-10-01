@@ -33,6 +33,7 @@ jobs:
         run: |
           cargo update
           python3 .github/scripts/check-lock.py
+          python3 .github/scripts/test-coverage.py
           rustc --version --verbose
       - uses: actions/upload-artifact@v4
         with:
@@ -109,7 +110,7 @@ jobs:
       - name: Export line-level coverage evidence
         run: cargo llvm-cov report --lcov --output-path coverage.lcov --ignore-filename-regex '/tests/'
       - name: Enforce complete measured coverage
-        run: python3 .github/scripts/check-coverage.py coverage.lcov
+        run: python3 .github/scripts/check-coverage.py coverage.lcov coverage.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -165,11 +166,15 @@ jobs:
       - name: Install maintained browser driver
         run: python3 -m pip install -r .github/requirements.txt
       - name: Measure actual browser Rust lines and branches
-        run: cargo llvm-cov test --locked --branch --coverage-target-only --target wasm32-unknown-unknown --lcov --output-path wasm-coverage.lcov --ignore-filename-regex '/tests/'
+        run: cargo llvm-cov test --locked --branch --coverage-target-only --target wasm32-unknown-unknown --json --output-path wasm-coverage.json --ignore-filename-regex '/tests/'
+      - name: Export browser source counters from the same execution
+        run: cargo llvm-cov report --target wasm32-unknown-unknown --lcov --output-path wasm-coverage.lcov --ignore-filename-regex '/tests/'
       - name: Enforce actual browser Rust coverage
-        run: python3 .github/scripts/check-coverage.py wasm-coverage.lcov wasm
+        run: python3 .github/scripts/check-coverage.py wasm-coverage.lcov wasm-coverage.json wasm
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: wasm-coverage
-          path: wasm-coverage.lcov
+          path: |
+            wasm-coverage.lcov
+            wasm-coverage.json
